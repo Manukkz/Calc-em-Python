@@ -1,2 +1,5 @@
 number_1=int(input("Digite seu primeiro numero: "))
 number_2=int(input("Digite seu segundo numero:"))
+
+
+print(number_1 + number_2)
