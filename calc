@@ -1,0 +1,2 @@
+number_1=input("Digite seu primeiro numero: ")
+number_2=input("Digite seu segundo numero:")
