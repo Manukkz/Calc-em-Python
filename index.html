@@ -7,301 +7,172 @@
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script id="MathJax-script" async
-    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)'], ['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
   <style>
-    body {
-      transition: background-color 0.3s ease;
-    }
-
-    .fade-in {
-      animation: fadeIn 0.5s ease-in-out;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .main-card {
-      border: none;
-      border-radius: 1.5rem;
-      transition: transform 0.2s;
-    }
-
+    body { transition: background-color .3s ease; }
+    .main-card { border: none; border-radius: 1.5rem; }
     .result-box {
       background-color: rgba(var(--bs-primary-rgb), 0.08);
       border: 2px solid rgba(var(--bs-primary-rgb), 0.1);
       border-radius: 1rem;
       padding: 2rem;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .result-value {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--bs-primary);
-      word-break: break-word;
-    }
-
-    .copy-btn {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      border: none;
-      background: transparent;
-      color: var(--bs-primary);
-      cursor: pointer;
-      font-size: 1.25rem;
-    }
-
-    .action-btn {
-      border-radius: 50rem;
-      padding: 0.6rem 1.5rem;
-      font-weight: 600;
-      transition: all 0.2s;
-    }
-
-    .action-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    .history-item {
-      border: none;
-      border-left: 4px solid transparent;
-      transition: all 0.2s;
-      cursor: pointer;
-      margin-bottom: 0.5rem;
-      border-radius: 0.5rem !important;
-    }
-
-    .history-item:hover {
-      background-color: rgba(var(--bs-primary-rgb), 0.05);
-      border-left-color: var(--bs-primary);
-      transform: translateX(4px);
-    }
-
-    .step-card {
-      background-color: rgba(var(--bs-primary-rgb), 0.05);
-      border-left: 3px solid var(--bs-primary);
-      border-radius: 0.5rem;
-      padding: 1rem;
       margin-bottom: 1rem;
+      position: relative;
     }
-
-    [data-bs-theme="dark"] .step-card {
-      background-color: rgba(255, 255, 255, 0.05);
+    .result-value { font-size: 2rem; font-weight: 700; color: var(--bs-primary); }
+    .copy-btn {
+      position: absolute; right: 1rem; top: 1rem;
+      border: none; background: transparent; color: var(--bs-primary);
     }
-
-    [data-bs-theme="dark"] .result-box {
-      background-color: rgba(255, 255, 255, 0.03);
-    }
-
-    [data-bs-theme="dark"] .mjx-chtml {
-      color: #e0e0e0 !important;
+    .step-card {
+      background: rgba(var(--bs-primary-rgb), 0.05);
+      border-left: 4px solid var(--bs-primary);
+      border-radius: .5rem;
+      padding: .75rem 1rem;
+      margin-bottom: .5rem;
     }
   </style>
 </head>
 
-<body class="d-flex flex-column min-vh-100 bg-light">
-
-  <nav class="navbar navbar-expand-lg bg-body-tertiary shadow-sm mb-5">
+<body class="bg-light">
+  <nav class="navbar bg-body-tertiary shadow-sm mb-5">
     <div class="container">
-      <a class="navbar-brand fw-bold text-primary" href="#">
-        <i class="fas fa-cube me-2"></i>PyCalc <span class="fw-light text-body">Pro</span>
-      </a>
-      <button class="btn btn-outline-secondary btn-sm rounded-circle border-0" onclick="toggleTheme()" id="themeBtn"
-        title="Alternar Tema">
-        <i class="fas fa-moon"></i>
-      </button>
+      <a class="navbar-brand fw-bold text-primary"><i class="fas fa-cube me-2"></i>PyCalc <span class="fw-light text-body">Pro</span></a>
+      <button class="btn btn-outline-secondary btn-sm rounded-circle border-0" onclick="toggleTheme()" id="themeBtn"><i class="fas fa-moon"></i></button>
     </div>
   </nav>
 
-  <div class="container flex-grow-1">
+  <div class="container">
     <div class="row justify-content-center">
-      <div class="col-lg-6 col-md-9">
-        <div class="card main-card shadow-lg mb-5 bg-body">
-          <div class="card-body p-4 p-md-5">
-            <div class="text-center mb-4">
-              <h4 class="fw-bold">Calculadora Simbólica Avançada</h4>
-              <p class="text-muted small">Derivadas, Integrais e Limites — com explicações passo a passo</p>
-            </div>
-
-            <div class="v-stack gap-3">
-              <div class="form-floating">
-                <select id="operacao" class="form-select border-secondary-subtle fw-bold text-primary"
-                  onchange="togglePontoInput()">
-                  <option value="derivada">⚡ Derivada (d/dx)</option>
-                  <option value="integral">∫ Integral</option>
-                  <option value="limite">→ Limite</option>
-                </select>
-                <label for="operacao">O que vamos calcular?</label>
-              </div>
-
-              <div>
-                <div class="d-flex justify-content-between mb-1">
-                  <label class="form-label small fw-bold text-muted ms-1">FUNÇÃO f(x)</label>
-                </div>
-                <input type="text" id="funcao"
-                  class="form-control form-control-lg bg-body-tertiary border-0 text-center fw-bold font-monospace"
-                  placeholder="Ex: (x**2 - 1)/(x - 1)">
-              </div>
-
-              <div id="ponto-group" class="d-none fade-in">
-                <label class="form-label small fw-bold text-muted ms-1">X TENDE A</label>
-                <input type="text" id="ponto" class="form-control text-center border-secondary-subtle"
-                  placeholder="Ex: 0, 1, oo (infinito)">
-              </div>
-
-              <button onclick="calcular()" class="btn btn-primary w-100 btn-lg rounded-pill shadow mt-3 fw-bold py-3">
-                <span id="btn-text">Calcular Resultado</span>
-                <span id="loading" class="spinner-border spinner-border-sm ms-2" style="display:none"></span>
-              </button>
-            </div>
+      <div class="col-lg-6 col-md-8">
+        <div class="card main-card shadow p-4">
+          <div class="text-center mb-4">
+            <h4 class="fw-bold">Calculadora Simbólica</h4>
+            <p class="text-muted small">Limites, Derivadas e Integrais com explicação passo a passo</p>
           </div>
+
+          <div class="form-floating mb-3">
+            <select id="operacao" class="form-select text-primary fw-bold" onchange="togglePontoInput()">
+              <option value="derivada">⚡ Derivada</option>
+              <option value="integral">∫ Integral</option>
+              <option value="limite">→ Limite</option>
+            </select>
+            <label for="operacao">Operação</label>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted ms-1">FUNÇÃO f(x)</label>
+            <input id="funcao" class="form-control text-center fw-bold" placeholder="Ex: (x**2-1)/(x-1)">
+          </div>
+
+          <div id="ponto-group" class="mb-3 d-none">
+            <label class="form-label small fw-bold text-muted ms-1">X TENDE A</label>
+            <input id="ponto" class="form-control text-center" placeholder="Ex: 0, 1, oo">
+          </div>
+
+          <button onclick="calcular()" class="btn btn-primary w-100 rounded-pill fw-bold py-3">
+            <span id="btn-text">Calcular</span>
+            <span id="loading" class="spinner-border spinner-border-sm ms-2" style="display:none"></span>
+          </button>
         </div>
 
-        <div id="result-area" style="display:none;" class="fade-in text-center mb-5">
+        <div id="result-area" style="display:none;" class="mt-4 text-center">
           <div class="result-box shadow-sm">
-            <button class="copy-btn" title="Copiar resultado" onclick="copiarResultado()">
-              <i class="fas fa-copy"></i>
-            </button>
+            <button class="copy-btn" onclick="copiarResultado()" title="Copiar resultado"><i class="fas fa-copy"></i></button>
             <span class="badge bg-primary-subtle text-primary mb-3 px-3 rounded-pill">RESULTADO FINAL</span>
-            <div id="resultado" class="result-value my-2"></div>
+            <div id="resultado" class="result-value"></div>
           </div>
-
           <div id="steps-area" class="text-start mt-4"></div>
-
-          <div class="d-flex justify-content-center gap-2 flex-wrap mt-3">
-            <button id="btn-graph" class="btn btn-outline-primary action-btn text-white" type="button"
-              data-bs-toggle="modal" data-bs-target="#graphModal" style="display:none;">
-              <i class="fas fa-chart-line me-2"></i>Ver Gráfico
-            </button>
-          </div>
+          <button id="btn-graph" class="btn btn-outline-primary mt-3" data-bs-toggle="modal" data-bs-target="#graphModal" style="display:none;">
+            <i class="fas fa-chart-line me-2"></i>Ver Gráfico
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="modal fade" id="graphModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content border-0 shadow-lg rounded-4">
+  <div class="modal fade" id="graphModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content border-0 shadow rounded-4">
         <div class="modal-header border-0 pb-0">
-          <h5 class="modal-title fw-bold text-primary"><i class="fas fa-chart-area me-2"></i>Visualização Gráfica</h5>
+          <h5 class="modal-title text-primary fw-bold"><i class="fas fa-chart-area me-2"></i>Gráfico</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body text-center p-4">
-          <div class="bg-white rounded-3 p-2 border d-inline-block shadow-sm">
-            <img id="modal-graph-img" class="img-fluid rounded" alt="Gráfico da Função" style="max-height: 500px;">
-          </div>
-          <p class="text-muted small mt-3 mb-0">O gráfico mostra o comportamento da função no intervalo [-10, 10].</p>
+          <img id="modal-graph-img" class="img-fluid rounded shadow" style="max-height:500px;">
         </div>
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
   <script>
-    // --- Tema ---
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    setTheme(savedTheme);
-    function setTheme(t) {
-      document.documentElement.setAttribute('data-bs-theme', t);
-      localStorage.setItem('theme', t);
-      document.getElementById('themeBtn').innerHTML = t === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-    }
-    function toggleTheme() { setTheme(document.documentElement.getAttribute('data-bs-theme') === 'light' ? 'dark' : 'light'); }
+    const API_URL = "https://calc-em-python.onrender.com//calculate";
 
-    // --- Mostra ou esconde o campo "ponto" ---
+    function toggleTheme() {
+      const html = document.documentElement;
+      const dark = html.getAttribute("data-bs-theme") === "dark";
+      html.setAttribute("data-bs-theme", dark ? "light" : "dark");
+      document.getElementById("themeBtn").innerHTML = dark ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
+    }
     function togglePontoInput() {
-      const op = document.getElementById('operacao').value;
-      const el = document.getElementById('ponto-group');
-      el.classList.toggle('d-none', op !== 'limite');
+      const op = document.getElementById("operacao").value;
+      document.getElementById("ponto-group").classList.toggle("d-none", op !== "limite");
     }
-
-    // --- Copiar resultado ---
     function copiarResultado() {
-      const texto = document.getElementById('resultado').innerText;
-      navigator.clipboard.writeText(texto);
+      navigator.clipboard.writeText(document.getElementById("resultado").innerText);
       alert("Resultado copiado!");
     }
 
-    // --- Função principal ---
     async function calcular() {
-      const func = document.getElementById('funcao');
-      const op = document.getElementById('operacao').value;
-      const pt = document.getElementById('ponto').value;
-      const load = document.getElementById('loading');
-      const btnText = document.getElementById('btn-text');
-      const resArea = document.getElementById('result-area');
-      const btnGraph = document.getElementById('btn-graph');
-      const modalGraphImg = document.getElementById('modal-graph-img');
+      const func = document.getElementById("funcao").value.trim();
+      const op = document.getElementById("operacao").value;
+      const pt = document.getElementById("ponto").value;
+      const load = document.getElementById("loading"), btnText = document.getElementById("btn-text");
+      if (!func) { alert("Digite uma função."); return; }
 
-      if (!func.value.trim()) { alert("Por favor, digite uma função."); return; }
-
-      load.style.display = 'inline-block';
-      btnText.textContent = 'Calculando...';
-      func.disabled = true;
-      resArea.style.display = 'none';
-      btnGraph.style.display = 'none';
-
+      load.style.display = "inline-block"; btnText.textContent = "Calculando...";
       try {
-        const response = await fetch('http://127.0.0.1:5000/calculate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ func_str: func.value, operation: op, ponto: pt })
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ func_str: func, operation: op, ponto: pt })
         });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Erro no cálculo");
 
-        const data = await response.json();
-
-        if (response.ok) {
-          let r = data.result;
-          if (op === 'integral') r += " + C";
-          document.getElementById('resultado').innerHTML = `\\[ ${r} \\]`;
-
-          renderSteps(data.steps);
-
-          if (data.plot) {
-            modalGraphImg.src = 'data:image/png;base64,' + data.plot;
-            btnGraph.style.display = 'inline-block';
-          }
-
-          resArea.style.display = 'block';
-          MathJax.typesetPromise();
+        document.getElementById("resultado").innerHTML = `\\[ ${data.result} \\]`;
+        renderSteps(data.steps);
+        if (data.plot) {
+          document.getElementById("btn-graph").style.display = "inline-block";
+          document.getElementById("modal-graph-img").src = "data:image/png;base64," + data.plot;
         } else {
-          alert("Erro: " + data.error);
+          document.getElementById("btn-graph").style.display = "none";
         }
+        document.getElementById("result-area").style.display = "block";
+        MathJax.typesetPromise();
       } catch (e) {
-        alert("Erro de conexão com o servidor Python.");
+        alert(e.message);
       } finally {
-        load.style.display = 'none';
-        btnText.textContent = 'Calcular Resultado';
-        func.disabled = false;
+        load.style.display = "none"; btnText.textContent = "Calcular";
       }
     }
 
-    // --- Renderizar Passos ---
-    function renderSteps(passos) {
-      const div = document.getElementById('steps-area');
-      div.innerHTML = '';
-      if (!passos || !passos.length) {
-        div.innerHTML = '<p class="text-muted text-center p-3">Nenhum passo detalhado disponível.</p>';
-        return;
-      }
-
-      passos.forEach((p, i) => {
-        div.innerHTML += `
-          <div class="step-card fade-in">
-            <div class="fw-bold text-secondary mb-1">Passo ${i + 1}</div>
-            <div class="math-step">\\[ ${p} \\]</div>
-          </div>`;
+    function renderSteps(steps) {
+      const area = document.getElementById("steps-area");
+      area.innerHTML = "";
+      if (!steps || !steps.length) { area.innerHTML = "<p class='text-muted'>Nenhum passo detalhado.</p>"; return; }
+      steps.forEach((s, i) => {
+        area.innerHTML += `<div class='step-card'><div class='fw-bold text-secondary'>Passo ${i + 1}</div><div>\\[ ${s} \\]</div></div>`;
       });
-
       MathJax.typesetPromise();
     }
   </script>
