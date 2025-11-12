@@ -4,34 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PyCalc Pro</title>
-    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-
     <style>
-        /* Estilos Personalizados */
         body, .card, .navbar, .offcanvas, .modal-content { transition: background-color 0.3s, color 0.3s; }
-        
         .result-display {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: var(--bs-primary);
-            padding: 20px;
-            border-radius: 10px;
+            font-size: 1.8rem; font-weight: bold; color: var(--bs-primary);
+            padding: 20px; border-radius: 10px;
             background-color: rgba(var(--bs-primary-rgb), 0.1);
             border: 1px solid rgba(var(--bs-primary-rgb), 0.2);
         }
-        
         .history-item { cursor: pointer; transition: transform 0.2s; }
         .history-item:hover { transform: translateX(5px); }
-        
-        /* Ajuste para o modo escuro */
         [data-bs-theme="dark"] .mjx-chtml { color: #e0e0e0 !important; }
         [data-bs-theme="dark"] .list-group-item-action:hover { background-color: #2b3035; }
-        
         .help-link { text-decoration: none; font-size: 0.9rem; cursor: pointer; }
         .help-link:hover { text-decoration: underline; }
     </style>
@@ -40,12 +28,8 @@
 
     <nav class="navbar navbar-expand-lg bg-body-tertiary shadow-sm mb-4">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="#">
-                <i class="fas fa-square-root-variable text-primary"></i> PyCalc Pro
-            </a>
-            <button class="btn btn-outline-secondary btn-sm rounded-circle" onclick="toggleTheme()" id="themeBtn">
-                <i class="fas fa-moon"></i>
-            </button>
+            <a class="navbar-brand fw-bold" href="#"><i class="fas fa-square-root-variable text-primary"></i> PyCalc Pro</a>
+            <button class="btn btn-outline-secondary btn-sm rounded-circle" onclick="toggleTheme()" id="themeBtn"><i class="fas fa-moon"></i></button>
         </div>
     </nav>
 
@@ -66,15 +50,13 @@
                             
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <label class="form-label mb-0 ms-1 text-muted small">Função f(x)</label>
-                                <span class="text-primary help-link" data-bs-toggle="modal" data-bs-target="#helpModal">
-                                    <i class="fas fa-question-circle"></i> Sintaxe
-                                </span>
+                                <span class="text-primary help-link" data-bs-toggle="modal" data-bs-target="#helpModal"><i class="fas fa-question-circle"></i> Como digitar?</span>
                             </div>
 
-                            <input type="text" id="funcao" class="form-control form-control-lg text-center" placeholder="Ex: (x**2 - 1)/(x - 1)">
+                            <input type="text" id="funcao" class="form-control form-control-lg text-center" placeholder="Ex: (6*x**3 - 3*x)/(2*x**3)">
                             
                             <div id="ponto-group" class="mt-2 d-none">
-                                <input type="text" id="ponto" class="form-control text-center" placeholder="x tende a... (ex: 1)">
+                                <input type="text" id="ponto" class="form-control text-center" placeholder="x tende a... (use 'oo' para infinito)">
                             </div>
                         </div>
 
@@ -105,8 +87,7 @@
                         <span class="fw-bold opacity-75">Histórico</span>
                         <small onclick="limparHistorico()" class="text-danger" style="cursor:pointer">Limpar</small>
                     </div>
-                    <ul class="list-group list-group-flush rounded shadow-sm" id="lista-historico">
-                        </ul>
+                    <ul class="list-group list-group-flush rounded shadow-sm" id="lista-historico"></ul>
                 </div>
             </div>
         </div>
@@ -114,15 +95,12 @@
 
     <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasSteps">
         <div class="offcanvas-header">
-            <h5 class="offcanvas-title"><i class="fas fa-graduation-cap me-2"></i>Como Resolver?</h5>
+            <h5 class="offcanvas-title"><i class="fas fa-graduation-cap me-2"></i>Passo a Passo</h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
         </div>
         <div class="offcanvas-body">
-            <div class="alert alert-info small mb-3">
-                <i class="fas fa-info-circle me-1"></i> Análise detalhada gerada pelo sistema.
-            </div>
-            <div class="accordion accordion-flush" id="accordionSteps">
-                </div>
+            <div class="alert alert-info small mb-3"><i class="fas fa-info-circle me-1"></i> Detalhes do cálculo:</div>
+            <div class="accordion accordion-flush" id="accordionSteps"></div>
         </div>
     </div>
 
@@ -134,186 +112,132 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="small text-muted">Use a sintaxe correta para evitar erros.</p>
-                    <table class="table table-striped table-hover border">
-                        <thead><tr><th>Operação</th><th>Símbolo</th><th>Correto</th></tr></thead>
+                    <div class="alert alert-warning small">
+                        <strong>Importante:</strong> Use parênteses para agrupar divisões!
+                    </div>
+                    <table class="table table-striped border">
+                        <thead><tr><th>Op</th><th>Errado ❌</th><th>Certo ✅</th></tr></thead>
                         <tbody>
-                            <tr><td>Multiplicação</td><td class="text-danger fw-bold">*</td><td><code>2*x</code> (não 2x)</td></tr>
-                            <tr><td>Potência</td><td class="text-danger fw-bold">**</td><td><code>x**3</code> (não x^3)</td></tr>
-                            <tr><td>Divisão</td><td class="fw-bold">/</td><td><code>1/(2*x)</code></td></tr>
+                            <tr><td>Multiplicação</td><td>2x</td><td><code>2*x</code></td></tr>
+                            <tr><td>Potência</td><td>x^2</td><td><code>x**2</code></td></tr>
+                            <tr><td>Divisão</td><td>x+1/x</td><td><code>(x+1)/x</code></td></tr>
                         </tbody>
                     </table>
-                    <div class="alert alert-warning small p-2">
-                        <strong>Dica:</strong> Use parênteses sempre que tiver divisão! <br>
-                        Errado: <code>x+1/x-1</code> <br>
-                        Certo: <code>(x+1)/(x-1)</code>
-                    </div>
                 </div>
+                <div class="modal-footer"><button class="btn btn-primary btn-sm" data-bs-dismiss="modal">Entendi</button></div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
     <script>
-        // === 1. Configuração de Tema ===
+        // Tema
         const savedTheme = localStorage.getItem('theme') || 'light';
         setTheme(savedTheme);
-
-        function setTheme(theme) {
-            document.documentElement.setAttribute('data-bs-theme', theme);
-            localStorage.setItem('theme', theme);
-            const icon = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-            document.getElementById('themeBtn').innerHTML = icon;
+        function setTheme(t) {
+            document.documentElement.setAttribute('data-bs-theme', t);
+            localStorage.setItem('theme', t);
+            document.getElementById('themeBtn').innerHTML = t==='dark'?'<i class="fas fa-sun"></i>':'<i class="fas fa-moon"></i>';
         }
+        function toggleTheme() { setTheme(document.documentElement.getAttribute('data-bs-theme')==='light'?'dark':'light'); }
 
-        function toggleTheme() {
-            const current = document.documentElement.getAttribute('data-bs-theme');
-            setTheme(current === 'light' ? 'dark' : 'light');
-        }
-
-        // === 2. Interface ===
+        // UI
         function togglePontoInput() {
             const op = document.getElementById('operacao').value;
-            const div = document.getElementById('ponto-group');
-            if (op === 'limite') div.classList.remove('d-none');
-            else div.classList.add('d-none');
+            document.getElementById('ponto-group').classList.toggle('d-none', op !== 'limite');
         }
 
-        // === 3. Lógica de Cálculo ===
+        // Cálculo
         async function calcular() {
-            const funcInput = document.getElementById('funcao');
-            const operacao = document.getElementById('operacao').value;
-            const ponto = document.getElementById('ponto').value;
-            
-            // Elementos UI
-            const loading = document.getElementById('loading');
-            const resultArea = document.getElementById('result-area');
-            const btnText = document.getElementById('btn-text');
-            const graficoContainer = document.getElementById('grafico-container');
-            const graficoImg = document.getElementById('grafico-img');
+            const func = document.getElementById('funcao');
+            const op = document.getElementById('operacao').value;
+            const pt = document.getElementById('ponto').value;
+            const load = document.getElementById('loading');
+            const resArea = document.getElementById('result-area');
+            const graphBox = document.getElementById('grafico-container');
 
-            if (!funcInput.value.trim()) {
-                alert("Digite uma função!");
-                return;
-            }
+            if (!func.value.trim()) { alert("Digite uma função!"); return; }
 
-            // Estado de Carregamento
-            loading.style.display = 'inline-block';
-            btnText.textContent = 'Calculando...';
-            funcInput.disabled = true;
-            resultArea.style.display = 'none';
-            graficoContainer.style.display = 'none';
+            load.style.display = 'inline-block';
+            document.getElementById('btn-text').textContent = 'Calculando...';
+            func.disabled = true;
+            resArea.style.display = 'none';
+            graphBox.style.display = 'none';
 
             try {
-                // ATENÇÃO: Se rodar localmente, use http://127.0.0.1:5000/calculate
-                // Se rodar no Render, use a URL do Render.
+                // SE FOR RODAR NO RENDER, MUDE A URL ABAIXO PARA SEU LINK DO RENDER
                 const response = await fetch('http://127.0.0.1:5000/calculate', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        func_str: funcInput.value,
-                        operation: operacao,
-                        ponto: ponto
-                    }),
+                    body: JSON.stringify({ func_str: func.value, operation: op, ponto: pt })
                 });
-
+                
                 const data = await response.json();
 
                 if (response.ok) {
-                    let res = data.result;
-                    if (operacao === 'integral') res += " + C";
-
-                    // Exibe resultado e renderiza LaTeX
-                    document.getElementById('resultado').innerHTML = `\\[ ${res} \\]`;
+                    let r = data.result;
+                    if (op === 'integral') r += " + C";
                     
-                    // Exibe Gráfico se existir
+                    document.getElementById('resultado').innerHTML = `\\[ ${r} \\]`;
+                    
                     if (data.plot) {
-                        graficoImg.src = 'data:image/png;base64,' + data.plot;
-                        graficoContainer.style.display = 'block';
+                        document.getElementById('grafico-img').src = 'data:image/png;base64,' + data.plot;
+                        graphBox.style.display = 'block';
                     }
-
-                    // Renderiza Passos e Histórico
-                    renderizarPassos(data.steps);
-                    adicionarHistorico(operacao, funcInput.value, res, ponto);
-
-                    resultArea.style.display = 'block';
+                    
+                    renderPassos(data.steps);
+                    addHist(op, func.value, r, pt);
+                    resArea.style.display = 'block';
                 } else {
-                    alert("Erro no cálculo: " + data.error);
+                    alert("Erro: " + data.error);
                 }
-                
-                // Atualiza as fórmulas matemáticas
                 MathJax.typesetPromise();
-
-            } catch (e) {
-                alert("Erro de conexão. Verifique se o servidor Python (app.py) está rodando.");
-                console.error(e);
-            } finally {
-                loading.style.display = 'none';
-                btnText.textContent = 'Calcular';
-                funcInput.disabled = false;
+            } catch (e) { alert("Erro de conexão."); console.error(e); }
+            finally {
+                load.style.display = 'none';
+                document.getElementById('btn-text').textContent = 'Calcular';
+                func.disabled = false;
             }
         }
 
-        // === 4. Funções Auxiliares ===
-        function renderizarPassos(passos) {
-            const container = document.getElementById('accordionSteps');
-            container.innerHTML = '';
+        function renderPassos(passos) {
+            const div = document.getElementById('accordionSteps');
+            div.innerHTML = '';
+            if(!passos || !passos.length) { div.innerHTML='<p class="text-muted text-center p-3">Sem passos.</p>'; return; }
             
-            if (!passos || passos.length === 0) {
-                container.innerHTML = '<div class="text-center text-muted p-3">Nenhum passo detalhado disponível.</div>';
-                return;
-            }
-
-            passos.forEach((passo, index) => {
-                const id = `step${index}`;
-                const show = index === 0 ? 'show' : '';
-                const collapsed = index === 0 ? '' : 'collapsed';
-                
-                container.innerHTML += `
+            passos.forEach((p, i) => {
+                const id = `step${i}`;
+                const show = i===0?'show':'';
+                const col = i===0?'':'collapsed';
+                div.innerHTML += `
                     <div class="accordion-item">
                         <h2 class="accordion-header">
-                            <button class="accordion-button ${collapsed}" type="button" data-bs-toggle="collapse" data-bs-target="#${id}">
-                                Passo ${index + 1}
-                            </button>
+                            <button class="accordion-button ${col}" type="button" data-bs-toggle="collapse" data-bs-target="#${id}">Passo ${i+1}</button>
                         </h2>
                         <div id="${id}" class="accordion-collapse collapse ${show}" data-bs-parent="#accordionSteps">
-                            <div class="accordion-body">
-                                \\[ ${passo} \\]
-                            </div>
+                            <div class="accordion-body">\\[ ${p} \\]</div>
                         </div>
                     </div>`;
             });
         }
 
-        function adicionarHistorico(op, func, res, ponto) {
-            const lista = document.getElementById('lista-historico');
-            const item = document.createElement('li');
-            item.className = 'list-group-item list-group-item-action history-item d-flex justify-content-between align-items-center mb-2 rounded border';
-            item.innerHTML = `
-                <div>
-                    <span class="badge bg-secondary me-2">${op}</span>
-                    <span class="fw-bold font-monospace">\\[${func}\\]</span>
-                </div>
-                <i class="fas fa-redo-alt text-primary opacity-50"></i>
-            `;
-            
-            item.onclick = () => {
+        function addHist(op, f, r, p) {
+            const ul = document.getElementById('lista-historico');
+            const li = document.createElement('li');
+            li.className = 'list-group-item list-group-item-action history-item d-flex justify-content-between align-items-center mb-2 rounded border';
+            li.innerHTML = `<div><span class="badge bg-secondary me-2">${op}</span><span class="fw-bold font-monospace">\\[${f}\\]</span></div><i class="fas fa-redo-alt text-primary opacity-50"></i>`;
+            li.onclick = () => {
                 document.getElementById('operacao').value = op;
-                document.getElementById('funcao').value = func;
-                document.getElementById('ponto').value = ponto;
+                document.getElementById('funcao').value = f;
+                document.getElementById('ponto').value = p;
                 togglePontoInput();
                 calcular();
             };
-
-            lista.prepend(item);
-            MathJax.typesetPromise([item]); 
-            if (lista.children.length > 5) lista.removeChild(lista.lastChild);
+            ul.prepend(li);
+            MathJax.typesetPromise([li]);
+            if(ul.children.length > 5) ul.removeChild(ul.lastChild);
         }
-
-        function limparHistorico() {
-            document.getElementById('lista-historico').innerHTML = '';
-        }
+        function limparHistorico() { document.getElementById('lista-historico').innerHTML = ''; }
     </script>
 </body>
 </html>
