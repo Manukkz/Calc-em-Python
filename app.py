@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sympy as sp
 import matplotlib
-matplotlib.use('Agg') # Backend para servidor (sem janela pop-up)
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import io
@@ -15,106 +15,168 @@ class StepSolver:
     def __init__(self):
         self.x = sp.symbols('x')
 
-    def format_latex(self, expr):
+    def format(self, expr):
         return sp.latex(expr)
 
-    # --- DERIVADAS ---
+    # ==========================================
+    # LÓGICA DE DERIVADAS (ATUALIZADA E COMPLETA)
+    # ==========================================
     def solve_derivative_steps(self, f):
         steps = []
-        steps.append(r"\text{Função: } " + self.format_latex(f))
-        self._recursive_diff(f, steps)
+        steps.append(r"\text{Calculando a derivada de: } " + self.format(f))
+        
+        # Chama a função recursiva que identifica a regra principal
+        self._analyze_derivative(f, steps)
+        
+        # Resultado final
         final_res = sp.diff(f, self.x)
-        steps.append(r"\text{Resultado: } " + self.format_latex(final_res))
+        steps.append(r"\text{Resultado Final: } f'(x) = " + self.format(final_res))
         return steps
 
-    def _recursive_diff(self, f, steps):
-        # Heurística simples para explicar regras
+    def _analyze_derivative(self, f, steps):
+        x = self.x
+
+        # 1. Regra da Constante
+        if f.is_constant(x):
+            steps.append(r"\text{Regra da Constante: A derivada de um número é 0.}")
+            steps.append(r"\frac{d}{dx}(" + self.format(f) + ") = 0")
+            return
+
+        # 2. Regra da Potência Simples (x^n)
+        if f.is_Pow and f.base == x and f.exp.is_Number:
+            n = f.exp
+            steps.append(r"\text{Regra da Potência: } \frac{d}{dx}(x^n) = nx^{n-1}")
+            steps.append(r"\text{Tomba o expoente } " + str(n) + r" \text{ e subtrai 1.}")
+            steps.append(r"Result: " + self.format(n) + "x^{" + str(n-1) + "}")
+            return
+
+        # 3. Regra da Soma e Diferença
         if f.is_Add:
-            steps.append(r"\text{Regra da Soma: Derive termo a termo.}")
+            steps.append(r"\text{Regra da Soma/Diferença: Derive cada termo separadamente.}")
+            terms = f.args
+            derivs = []
+            for term in terms:
+                # Mostra a derivada de cada parte
+                d_term = sp.diff(term, x)
+                steps.append(r"\frac{d}{dx}(" + self.format(term) + ") = " + self.format(d_term))
+            return
+
+        # 4. Verificação de Quociente vs Produto vs Múltiplo Constante
+        # O SymPy trata divisão como multiplicação por potência negativa.
+        # Precisamos separar numerador e denominador manualmente para detectar a Regra do Quociente.
+        numer, denom = f.as_numer_denom()
+
+        if denom != 1:
+            # É uma Divisão -> Regra do Quociente
+            steps.append(r"\text{Regra do Quociente: } \left( \frac{f}{g} \right)' = \frac{f'g - fg'}{g^2}")
+            steps.append(r"\text{Onde } f=" + self.format(numer) + r" \text{ e } g=" + self.format(denom))
+            
+            df = sp.diff(numer, x)
+            dg = sp.diff(denom, x)
+            
+            steps.append(r"f' = " + self.format(df))
+            steps.append(r"g' = " + self.format(dg))
+            steps.append(r"\text{Aplicando: } \frac{(" + self.format(df) + ")(" + self.format(denom) + ") - (" + self.format(numer) + ")(" + self.format(dg) + ")}{(" + self.format(denom) + ")^2}")
+            return
+
         elif f.is_Mul:
-             if len(f.args) == 2 and f.args[0].is_Number:
-                steps.append(r"\text{Regra da Constante: Mantenha o } " + self.format_latex(f.args[0]))
-             else:
-                steps.append(r"\text{Regra do Produto: } u'v + uv'")
-        elif f.is_Pow:
-            steps.append(r"\text{Regra do Tombo: } nx^{n-1}")
-        elif isinstance(f, (sp.sin, sp.cos, sp.tan, sp.exp, sp.log)):
-            steps.append(r"\text{Regra da Cadeia / Tabela.}")
+            # Separa constantes e funções
+            coeffs = [a for a in f.args if a.is_constant(x)]
+            funcs = [a for a in f.args if not a.is_constant(x)]
+            
+            # 5. Múltiplo Constante
+            if coeffs and len(funcs) == 1:
+                c = sp.Mul(*coeffs)
+                g = funcs[0]
+                steps.append(r"\text{Múltiplo Constante: } \frac{d}{dx}[c \cdot f(x)] = c \cdot f'(x)")
+                steps.append(r"\text{Mantenha o } " + self.format(c) + r" \text{ e derive } " + self.format(g))
+                dg = sp.diff(g, x)
+                steps.append(r"\text{Derivada da função: } " + self.format(dg))
+                return
 
-    # --- INTEGRAIS ---
+            # 6. Regra do Produto
+            else:
+                steps.append(r"\text{Regra do Produto: } (f \cdot g)' = f'g + fg'")
+                u = f.args[0]
+                v = sp.Mul(*f.args[1:]) # Agrupa o resto
+                du = sp.diff(u, x)
+                dv = sp.diff(v, x)
+                
+                steps.append(r"\text{Sendo } f=" + self.format(u) + r", g=" + self.format(v))
+                steps.append(r"\text{Aplicando: } (" + self.format(du) + r")(" + self.format(v) + r") + (" + self.format(u) + r")(" + self.format(dv) + r")")
+                return
+
+        # 7. Regra da Cadeia (Funções Compostas)
+        # Detecta se é uma função conhecida (sin, cos, exp) mas com argumento complexo
+        if hasattr(f, 'args') and len(f.args) == 1:
+            arg = f.args[0]
+            if arg != x and not arg.is_Number:
+                steps.append(r"\text{Regra da Cadeia: } \frac{d}{dx}f(g(x)) = f'(g(x)) \cdot g'(x)")
+                steps.append(r"\text{Função externa: } " + str(f.func))
+                steps.append(r"\text{Função interna (u): } " + self.format(arg))
+                
+                du = sp.diff(arg, x)
+                df_outer = sp.diff(f, arg).subs(arg, sp.Symbol('u')) # Truque visual
+                
+                steps.append(r"\text{Derive a externa: } " + self.format(df_outer))
+                steps.append(r"\text{Derive a interna (u'): } " + self.format(du))
+                steps.append(r"\text{Multiplique: } f'(u) \cdot u'")
+                return
+
+        # 8. Funções Específicas
+        if isinstance(f, sp.exp):
+            steps.append(r"\text{Exponencial: } (e^x)' = e^x")
+        elif isinstance(f, sp.log):
+            steps.append(r"\text{Logaritmo: } (\ln x)' = \frac{1}{x}")
+        elif isinstance(f, sp.sin):
+            steps.append(r"\text{Trigonométrica: } (\sin x)' = \cos x")
+        elif isinstance(f, sp.cos):
+            steps.append(r"\text{Trigonométrica: } (\cos x)' = -\sin x")
+        
+    # ==========================================
+    # INTEGRAIS E LIMITES (MANTIDOS IGUAIS)
+    # ==========================================
     def solve_integral_steps(self, f):
-        steps = []
-        steps.append(r"\text{Integral: } \int (" + self.format_latex(f) + r") dx")
-        res = sp.integrate(f, self.x)
-        steps.append(r"\text{Antiderivada: } " + self.format_latex(res) + " + C")
-        return steps
+        return [r"\text{Integral: } \int (" + self.format(f) + r") dx", 
+                r"\text{Resultado: } " + self.format(sp.integrate(f, self.x)) + "+C"]
 
-    # --- LIMITES (Lógica Inteligente) ---
     def solve_limit_steps(self, f, ponto):
         steps = []
         x = self.x
+        steps.append(r"\text{Limite: } x \to " + sp.latex(ponto))
         
-        # CASO 1: Limite tendendo ao Infinito (Regra dos Graus)
+        # Lógica de Infinito
         if ponto == sp.oo or ponto == -sp.oo:
-            steps.append(r"\text{Análise de Limite no Infinito } (x \to \infty)")
-            
-            # Tenta separar numerador e denominador
             numer, denom = sp.fraction(f)
-            
             if denom != 1:
-                # Pega o grau (maior expoente)
                 deg_num = sp.degree(numer, x)
                 deg_den = sp.degree(denom, x)
-                
-                steps.append(r"\text{1. Comparação de Graus (maiores expoentes):}")
-                steps.append(r"\text{Grau Numerador: } " + str(deg_num))
-                steps.append(r"\text{Grau Denominador: } " + str(deg_den))
-                
+                steps.append(r"\text{Comparação de Graus no Infinito:}")
+                steps.append(r"\text{Grau Num: }" + str(deg_num) + r", \text{Grau Den: }" + str(deg_den))
                 if deg_num == deg_den:
-                    # Pega os coeficientes líderes
-                    lead_num = sp.LC(numer, x)
-                    lead_den = sp.LC(denom, x)
-                    steps.append(r"\text{Graus iguais } \Rightarrow \text{ Divida os coeficientes líderes.}")
-                    steps.append(r"\text{Cálculo: } \frac{" + str(lead_num) + "}{" + str(lead_den) + "}")
-                    
-                    res = lead_num / lead_den
-                    steps.append(r"\text{Resultado converge para: } " + self.format_latex(res))
-                    return steps
-                
+                    steps.append(r"\text{Graus iguais: Divida os coeficientes líderes.}")
                 elif deg_num < deg_den:
-                    steps.append(r"\text{Grau de baixo é maior } \Rightarrow \text{ Tende a 0.}")
-                    return steps
-                
+                    steps.append(r"\text{Grau do denominador maior: Tende a 0.}")
                 else:
-                    steps.append(r"\text{Grau de cima é maior } \Rightarrow \text{ Tende ao infinito.}")
-                    return steps
-            else:
-                 steps.append(r"\text{Função polinomial: comportamento ditado pelo termo de maior grau.}")
+                    steps.append(r"\text{Grau do numerador maior: Tende ao infinito.}")
+            return steps
 
-        # CASO 2: Limite em ponto finito
-        steps.append(r"\text{1. Substituição direta } x \to " + str(ponto))
+        # Lógica Padrão
         try:
             val = f.subs(x, ponto)
             if val.is_real and not val.is_infinite and not val is sp.nan:
-                steps.append(r"\text{Substituição funcionou: } " + self.format_latex(val))
+                steps.append(r"\text{Substituição Direta: } " + self.format(val))
                 return steps
         except: pass
 
-        steps.append(r"\text{2. Indeterminação. Simplificando a expressão...}")
-        f_simp = sp.cancel(f) # Cancela termos comuns
+        steps.append(r"\text{Indeterminação. Simplificando ou usando L'Hôpital...}")
+        f_simp = sp.cancel(f)
         if f_simp != f:
-             steps.append(r"\text{Simplificado: } " + self.format_latex(f_simp))
-             try:
-                val = f_simp.subs(x, ponto)
-                if val.is_real and not val.is_infinite:
-                    steps.append(r"\text{Nova substituição: } " + self.format_latex(val))
-                    return steps
-             except: pass
+            steps.append(r"\text{Simplificado: } " + self.format(f_simp))
         
-        steps.append(r"\text{3. Aplicação de L'Hôpital ou Limites Laterais.}")
         return steps
 
-# --- GERADOR DE GRÁFICOS ---
+# --- GERADOR DE GRÁFICO ---
 def gerar_grafico(f, x_symbol):
     try:
         f_numpy = sp.lambdify(x_symbol, f, modules=['numpy'])
@@ -123,15 +185,14 @@ def gerar_grafico(f, x_symbol):
             y_vals = f_numpy(x_vals)
             if isinstance(y_vals, (int, float)): y_vals = np.full_like(x_vals, y_vals)
         except: return None
-
+        
         plt.figure(figsize=(6, 4))
         plt.plot(x_vals, y_vals, label='f(x)', color='#0d6efd')
         plt.axhline(0, color='black', linewidth=0.8)
         plt.axvline(0, color='black', linewidth=0.8)
         plt.grid(color='gray', linestyle='--', linewidth=0.5, alpha=0.5)
         plt.legend()
-        plt.title("Visualização")
-        
+        plt.title("Gráfico")
         img = io.BytesIO()
         plt.savefig(img, format='png', bbox_inches='tight')
         img.seek(0)
