@@ -155,14 +155,21 @@ solver = StepSolver()
 @app.route('/calculate', methods=['POST'])
 def calculate():
     data = request.json
-    func_str = data.get('func_str')
-    operation = data.get('operation')
+    func_str = data.get('func_str', '')
+    operation = data.get('operation', '')
     ponto_str = data.get('ponto', '0')
     x = sp.Symbol('x')
 
     try:
+        if not func_str.strip():
+            return jsonify({'error': 'Função vazia. Digite uma expressão válida.'}), 400
+
         f = sp.sympify(func_str)
         grafico = gerar_grafico(f, x)
+
+        # Define resultado e passos
+        result = None
+        steps = []
 
         if operation == 'derivada':
             steps = solver.solve_derivative_steps(f)
@@ -171,4 +178,31 @@ def calculate():
             steps = solver.solve_integral_steps(f)
             result = sp.integrate(f, x)
         elif operation == 'limite':
-            if ponto_str == 'oo': ponto = sp.oo
+            if ponto_str == 'oo':
+                ponto = sp.oo
+            elif ponto_str == '-oo':
+                ponto = -sp.oo
+            else:
+                try:
+                    ponto = float(ponto_str)
+                except ValueError:
+                    ponto = 0
+            steps = solver.solve_limit_steps(f, ponto)
+            result = sp.limit(f, x, ponto)
+        else:
+            return jsonify({'error': 'Operação inválida. Escolha derivada, integral ou limite.'}), 400
+
+        # Segurança extra: converter resultado em LaTeX
+        try:
+            latex_res = sp.latex(result)
+        except Exception:
+            latex_res = str(result)
+
+        return jsonify({
+            'result': latex_res,
+            'steps': steps,
+            'plot': grafico if grafico else None
+        })
+
+    except Exception as e:
+        return jsonify({'error': f'Erro interno: {str(e)}'}), 400
