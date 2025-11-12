@@ -228,7 +228,7 @@
             resultArea.style.display = 'none';
 
             try {
-                const response = await fetch('http://127.0.0.1:5000/calculate', {
+                const response = await fetch('https://calc-em-python.onrender.com/calculate', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ func_str: funcInput.value, operation: operacao, ponto: ponto }),
