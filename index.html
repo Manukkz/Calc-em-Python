@@ -17,7 +17,7 @@
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
   <style>
-    /* Transições suaves para o tema */
+    /* Transições suaves */
     body, .card, .modal-content, .offcanvas { transition: background-color .3s ease, color .3s ease; }
     
     .main-card { border: none; border-radius: 1.5rem; }
@@ -40,7 +40,6 @@
     }
     .copy-btn:hover { opacity: 1; }
 
-    /* Ajuste para Modo Escuro nas fórmulas */
     [data-bs-theme="dark"] .mjx-chtml { color: #e0e0e0 !important; }
   </style>
 </head>
@@ -53,10 +52,11 @@
         <i class="fas fa-cube me-2"></i>PyCalc <span class="fw-light text-body">Pro</span>
       </a>
       
-      <div class="d-flex align-items-center gap-2">
-        <button class="btn btn-outline-secondary btn-sm rounded-circle border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasHistory" title="Histórico">
+      <div class="d-flex align-items-center">
+        <button class="btn btn-outline-secondary btn-sm rounded-circle border-0 me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasHistory" title="Histórico">
             <i class="fas fa-history"></i>
         </button>
+
         <button class="btn btn-outline-secondary btn-sm rounded-circle border-0" onclick="toggleTheme()" id="themeBtn">
             <i class="fas fa-moon"></i>
         </button>
@@ -178,10 +178,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // URL correta para o Render
     const API_URL = "https://calc-em-python.onrender.com/calculate";
 
-    // Tema
+    // --- TEMA ---
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-bs-theme', savedTheme);
     document.getElementById("themeBtn").innerHTML = savedTheme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
@@ -200,12 +199,13 @@
       if (op === 'limite') document.getElementById('ponto-group').classList.remove('d-none');
       if (op === 'integral') document.getElementById('group-integral').classList.remove('d-none');
     }
-    toggleInputs(); // Executa ao iniciar
+    toggleInputs();
 
     function copiarResultado() {
       navigator.clipboard.writeText(document.getElementById("resultado").innerText);
     }
 
+    // --- CÁLCULO PRINCIPAL ---
     async function calcular() {
       const func = document.getElementById("funcao").value.trim();
       const op = document.getElementById("operacao").value;
@@ -229,16 +229,13 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Erro no cálculo");
 
-        // Salva no Histórico (NOVO)
+        // SALVA NO HISTÓRICO
         salvarNoHistorico(func, op, pt, a, b, data.result);
 
-        // Exibir Resultado
+        // EXIBE RESULTADO
         document.getElementById("resultado").innerHTML = `\\[ ${data.result} \\]`;
-        
-        // Preencher Passos
         renderSteps(data.steps);
         
-        // Configurar Gráfico
         if (data.plot) {
           document.getElementById("btn-graph").style.display = "inline-block";
           document.getElementById("modal-graph-img").src = "data:image/png;base64," + data.plot;
@@ -250,7 +247,7 @@
         MathJax.typesetPromise();
         
       } catch (e) {
-        alert("Erro: " + e.message + "\n\nDica: Se for o primeiro uso no Render, aguarde 1 minuto e tente de novo.");
+        alert("Erro: " + e.message + "\n\nDica: Se for o primeiro uso no Render, aguarde 1 minuto.");
       } finally {
         load.style.display = "none"; 
         btnText.textContent = "Calcular";
@@ -260,57 +257,37 @@
     function renderSteps(steps) {
       const area = document.getElementById("accordionSteps");
       area.innerHTML = "";
-      
       if (!steps || !steps.length) { 
           area.innerHTML = "<p class='text-muted text-center p-3'>Nenhum passo detalhado.</p>"; return; 
       }
-      
       steps.forEach((s, i) => {
         const id = `step${i}`;
         const show = i === 0 ? 'show' : '';
         const collapsed = i === 0 ? '' : 'collapsed';
-        
         area.innerHTML += `
             <div class="accordion-item">
                 <h2 class="accordion-header">
-                    <button class="accordion-button ${collapsed}" type="button" data-bs-toggle="collapse" data-bs-target="#${id}">
-                        Passo ${i + 1}
-                    </button>
+                    <button class="accordion-button ${collapsed}" type="button" data-bs-toggle="collapse" data-bs-target="#${id}">Passo ${i + 1}</button>
                 </h2>
                 <div id="${id}" class="accordion-collapse collapse ${show}" data-bs-parent="#accordionSteps">
-                    <div class="accordion-body">
-                        \\[ ${s} \\]
-                    </div>
+                    <div class="accordion-body">\\[ ${s} \\]</div>
                 </div>
-            </div>
-        `;
+            </div>`;
       });
     }
 
-    // ===== HISTÓRICO  =====
-    
-    // Inicializa o histórico
-    document.addEventListener("DOMContentLoaded", () => {
-        atualizarHistoricoUI();
-    });
+    // --- HISTÓRICO  ---
+    document.addEventListener("DOMContentLoaded", () => { atualizarHistoricoUI(); });
 
     function salvarNoHistorico(func, op, ponto, a, b, result) {
         let history = JSON.parse(localStorage.getItem('pycalc_history') || '[]');
-        
         const item = {
             id: Date.now(),
             date: new Date().toLocaleString(),
-            func: func,
-            op: op,
-            ponto: ponto,
-            a: a,
-            b: b,
-            result: result
+            func: func, op: op, ponto: ponto, a: a, b: b, result: result
         };
-        
         history.unshift(item);
-        if (history.length > 20) history.pop(); // Limita a 20 itens
-        
+        if (history.length > 20) history.pop();
         localStorage.setItem('pycalc_history', JSON.stringify(history));
         atualizarHistoricoUI();
     }
@@ -330,11 +307,8 @@
                     <span class="badge bg-primary-subtle text-primary rounded-pill text-uppercase" style="font-size:0.7rem">${item.op}</span>
                     <small class="text-muted" style="font-size:0.7rem">${item.date.split(' ')[1] || item.date}</small>
                 </div>
-                <div class="fw-bold text-truncate mb-1" style="max-width: 100%;">
-                   f(x) = ${item.func}
-                </div>
+                <div class="fw-bold text-truncate mb-1" style="max-width: 100%;">f(x) = ${item.func}</div>
                 ${ item.op === 'limite' ? `<small class="d-block text-muted">x &to; ${item.ponto}</small>` : '' }
-                ${ item.op === 'integral' && item.a ? `<small class="d-block text-muted">Int: [${item.a}, ${item.b}]</small>` : '' }
             </button>
         `).join('');
     }
@@ -345,14 +319,12 @@
         document.getElementById("ponto").value = item.ponto || "";
         document.getElementById("int-a").value = item.a || "";
         document.getElementById("int-b").value = item.b || "";
-        
         toggleInputs();
         
-        // Fecha o offcanvas
         const offcanvasEl = document.getElementById('offcanvasHistory');
         const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasEl);
         if (offcanvasInstance) offcanvasInstance.hide();
-
+        
         calcular();
     }
 
