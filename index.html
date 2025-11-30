@@ -52,9 +52,15 @@
       <a class="navbar-brand fw-bold text-primary">
         <i class="fas fa-cube me-2"></i>PyCalc <span class="fw-light text-body">Pro</span>
       </a>
-      <button class="btn btn-outline-secondary btn-sm rounded-circle border-0" onclick="toggleTheme()" id="themeBtn">
-        <i class="fas fa-moon"></i>
-      </button>
+      
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-secondary btn-sm rounded-circle border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasHistory" title="Histórico">
+            <i class="fas fa-history"></i>
+        </button>
+        <button class="btn btn-outline-secondary btn-sm rounded-circle border-0" onclick="toggleTheme()" id="themeBtn">
+            <i class="fas fa-moon"></i>
+        </button>
+      </div>
     </div>
   </nav>
 
@@ -136,6 +142,24 @@
     </div>
   </div>
 
+  <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasHistory">
+    <div class="offcanvas-header bg-body-tertiary">
+        <h5 class="offcanvas-title fw-bold text-primary">
+          <i class="fas fa-history me-2"></i>Histórico
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body d-flex flex-column">
+        <button onclick="limparHistorico()" class="btn btn-outline-danger btn-sm mb-3 rounded-pill">
+            <i class="fas fa-trash-alt me-2"></i>Limpar Tudo
+        </button>
+        
+        <div id="history-list" class="list-group list-group-flush flex-grow-1 overflow-auto">
+          <p class="text-muted text-center small mt-5">Nenhum cálculo recente.</p>
+        </div>
+    </div>
+  </div>
+
   <div class="modal fade" id="graphModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content border-0 shadow rounded-4">
@@ -176,7 +200,7 @@
       if (op === 'limite') document.getElementById('ponto-group').classList.remove('d-none');
       if (op === 'integral') document.getElementById('group-integral').classList.remove('d-none');
     }
-    toggleInputs(); // Executa ao iniciar para garantir estado correto
+    toggleInputs(); // Executa ao iniciar
 
     function copiarResultado() {
       navigator.clipboard.writeText(document.getElementById("resultado").innerText);
@@ -205,10 +229,13 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Erro no cálculo");
 
+        // Salva no Histórico (NOVO)
+        salvarNoHistorico(func, op, pt, a, b, data.result);
+
         // Exibir Resultado
         document.getElementById("resultado").innerHTML = `\\[ ${data.result} \\]`;
         
-        // Preencher Passos (Accordion)
+        // Preencher Passos
         renderSteps(data.steps);
         
         // Configurar Gráfico
@@ -258,6 +285,82 @@
             </div>
         `;
       });
+    }
+
+    // ===== HISTÓRICO  =====
+    
+    // Inicializa o histórico
+    document.addEventListener("DOMContentLoaded", () => {
+        atualizarHistoricoUI();
+    });
+
+    function salvarNoHistorico(func, op, ponto, a, b, result) {
+        let history = JSON.parse(localStorage.getItem('pycalc_history') || '[]');
+        
+        const item = {
+            id: Date.now(),
+            date: new Date().toLocaleString(),
+            func: func,
+            op: op,
+            ponto: ponto,
+            a: a,
+            b: b,
+            result: result
+        };
+        
+        history.unshift(item);
+        if (history.length > 20) history.pop(); // Limita a 20 itens
+        
+        localStorage.setItem('pycalc_history', JSON.stringify(history));
+        atualizarHistoricoUI();
+    }
+
+    function atualizarHistoricoUI() {
+        const history = JSON.parse(localStorage.getItem('pycalc_history') || '[]');
+        const list = document.getElementById("history-list");
+        
+        if (history.length === 0) {
+            list.innerHTML = "<p class='text-muted text-center small mt-5'>Nenhum cálculo recente.</p>";
+            return;
+        }
+
+        list.innerHTML = history.map(item => `
+            <button onclick='restaurarCalculo(${JSON.stringify(item)})' class="list-group-item list-group-item-action py-3 border-bottom">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="badge bg-primary-subtle text-primary rounded-pill text-uppercase" style="font-size:0.7rem">${item.op}</span>
+                    <small class="text-muted" style="font-size:0.7rem">${item.date.split(' ')[1] || item.date}</small>
+                </div>
+                <div class="fw-bold text-truncate mb-1" style="max-width: 100%;">
+                   f(x) = ${item.func}
+                </div>
+                ${ item.op === 'limite' ? `<small class="d-block text-muted">x &to; ${item.ponto}</small>` : '' }
+                ${ item.op === 'integral' && item.a ? `<small class="d-block text-muted">Int: [${item.a}, ${item.b}]</small>` : '' }
+            </button>
+        `).join('');
+    }
+
+    function restaurarCalculo(item) {
+        document.getElementById("operacao").value = item.op;
+        document.getElementById("funcao").value = item.func;
+        document.getElementById("ponto").value = item.ponto || "";
+        document.getElementById("int-a").value = item.a || "";
+        document.getElementById("int-b").value = item.b || "";
+        
+        toggleInputs();
+        
+        // Fecha o offcanvas
+        const offcanvasEl = document.getElementById('offcanvasHistory');
+        const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasEl);
+        if (offcanvasInstance) offcanvasInstance.hide();
+
+        calcular();
+    }
+
+    function limparHistorico() {
+        if(confirm("Deseja apagar todo o histórico?")) {
+            localStorage.removeItem('pycalc_history');
+            atualizarHistoricoUI();
+        }
     }
   </script>
 </body>
