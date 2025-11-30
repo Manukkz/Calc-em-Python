@@ -20,13 +20,14 @@ class StepSolver:
         """Formata expressão para LaTeX limpo"""
         return sp.latex(expr)
 
-    # ===== LIMITES (Com L'Hôpital) =====
+# ===== LIMITES (Com Fatoração + L'Hôpital) =====
     def solve_limit_steps(self, f, ponto):
         x = self.x
         steps = []
         pt_str = sp.latex(ponto)
         steps.append(r"\textbf{1. Analisar o limite:} \quad \lim_{x \to " + pt_str + "} " + self.fmt(f))
 
+        # Passo A: Substituição Direta
         try:
             val = f.subs(x, ponto)
             if val.is_real and not val.is_infinite and val is not sp.nan:
@@ -34,13 +35,29 @@ class StepSolver:
                 return steps
         except: pass
 
+        # Passo B: Tentar Fatoração / Produtos Notáveis 
+        f_simp = sp.cancel(f) # Tenta cortar termos comuns
+        if f_simp != f:
+            # Verifica se a simplificação resolveu o problema do 0/0
+            try:
+                val_simp = f_simp.subs(x, ponto)
+                if val_simp.is_real and not val_simp.is_infinite and val_simp is not sp.nan:
+                    steps.append(r"\text{Indeterminação identificada (0/0).}")
+                    steps.append(r"\text{Tentando simplificação algébrica (Fatoração/Produtos Notáveis):}")
+                    steps.append(self.fmt(f) + r" \to " + self.fmt(f_simp))
+                    steps.append(r"\text{Novo limite: } \lim_{x \to " + pt_str + "} " + self.fmt(f_simp))
+                    steps.append(r"\text{Resultado: } " + self.fmt(val_simp))
+                    return steps
+            except: pass
+
+        # Passo C: L'Hôpital (Se a fatoração não resolveu ou não se aplica)
         numer, denom = f.as_numer_denom()
         if denom != 1:
             lim_num = sp.limit(numer, x, ponto)
             lim_den = sp.limit(denom, x, ponto)
             
             if (lim_num == 0 and lim_den == 0) or (lim_num.is_infinite and lim_den.is_infinite):
-                steps.append(r"\text{Indeterminação identificada. Aplicando L'Hôpital:}")
+                steps.append(r"\text{Indeterminação persiste. Aplicando L'Hôpital:}")
                 d_num = sp.diff(numer, x)
                 d_den = sp.diff(denom, x)
                 
@@ -51,6 +68,7 @@ class StepSolver:
                 steps.append(r"\textbf{Resultado: } " + self.fmt(res))
                 return steps
 
+        # Fallback
         res = sp.limit(f, x, ponto)
         steps.append(r"\text{Resultado por análise algébrica: } " + self.fmt(res))
         return steps
